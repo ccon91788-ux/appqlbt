@@ -23,6 +23,9 @@ Future<void> main() async {
     showLunar.value = sp.getBool('lunar') ?? true;
   } catch (_) {}
   try {
+    await Repo.categories();
+  } catch (_) {}
+  try {
     await Notif.init();
     await Notif.rescheduleAll(await Repo.events(), await Repo.bills());
   } catch (_) {}

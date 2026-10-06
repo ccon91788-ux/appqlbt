@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../data/models.dart';
 import '../data/repo.dart';
+import '../sticker_picker.dart';
+import '../stickers.dart';
 import '../ui.dart';
 import '../utils.dart';
 
@@ -39,6 +41,10 @@ class _NotesState extends State<NotesScreen> {
         children: [
           Row(
             children: [
+              if (n.sticker.isNotEmpty) ...[
+                StickerBadge(n.sticker, border: n.border, size: 40),
+                const SizedBox(width: 8),
+              ],
               if (n.pinned) const Text('📌 '),
               Expanded(
                 child: Text(
@@ -141,6 +147,8 @@ class _NoteFormState extends State<NoteForm> {
   final _content = TextEditingController();
   int color = 0;
   bool pinned = false;
+  String sticker = '';
+  int border = 0;
 
   @override
   void initState() {
@@ -151,6 +159,8 @@ class _NoteFormState extends State<NoteForm> {
       _content.text = n.content;
       color = n.color;
       pinned = n.pinned;
+      sticker = n.sticker;
+      border = n.border;
     }
   }
 
@@ -171,6 +181,8 @@ class _NoteFormState extends State<NoteForm> {
     n.content = _content.text.trim();
     n.color = color;
     n.pinned = pinned;
+    n.sticker = sticker;
+    n.border = sticker.isEmpty ? 0 : border;
     try {
       await Repo.saveNote(n);
       if (mounted) Navigator.pop(context);
@@ -226,6 +238,21 @@ class _NoteFormState extends State<NoteForm> {
                 ),
             ],
           ),
+          const SizedBox(height: 16),
+          const Text('Sticker', style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          StickerGrid(
+            value: sticker,
+            border: border,
+            onChanged: (v) => setState(() => sticker = v),
+            defaultChild: const Icon(Icons.block),
+          ),
+          if (sticker.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text('Màu viền sticker', style: TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            BorderPalette(value: border, onChanged: (v) => setState(() => border = v)),
+          ],
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Ghim lên đầu'),

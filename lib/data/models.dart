@@ -220,6 +220,8 @@ class Note {
   int color; // chỉ số màu pastel 0..5
   bool pinned;
   DateTime updated;
+  String sticker; // '' = không có; tên sticker có sẵn hoặc 'file:<đường dẫn>'
+  int border; // màu viền sticker (ARGB), 0 = không viền
 
   Note({
     this.id,
@@ -228,6 +230,8 @@ class Note {
     this.color = 0,
     this.pinned = false,
     required this.updated,
+    this.sticker = '',
+    this.border = 0,
   });
 
   Map<String, Object?> toMap() => {
@@ -237,6 +241,8 @@ class Note {
     'color': color,
     'pinned': pinned ? 1 : 0,
     'updated_ms': updated.millisecondsSinceEpoch,
+    'sticker': sticker,
+    'border': border,
   };
 
   factory Note.fromMap(Map<String, Object?> m) => Note(
@@ -245,8 +251,44 @@ class Note {
     content: (m['content'] as String?) ?? '',
     color: (m['color'] as num?)?.toInt() ?? 0,
     pinned: ((m['pinned'] as num?)?.toInt() ?? 0) == 1,
+    sticker: (m['sticker'] as String?) ?? '',
+    border: (m['border'] as num?)?.toInt() ?? 0,
     updated: DateTime.fromMillisecondsSinceEpoch(
       ((m['updated_ms'] as num?) ?? DateTime.now().millisecondsSinceEpoch).toInt(),
     ),
+  );
+}
+
+/// Kiểu hiển thị của một danh mục: sticker + màu viền.
+/// [custom] = danh mục do người dùng tự tạo (có thể đổi tên / xóa).
+class CatStyle {
+  String name;
+  bool isIncome;
+  String sticker; // '' = dùng sticker mặc định
+  int border; // ARGB, 0 = không viền
+  bool custom;
+
+  CatStyle({
+    required this.name,
+    required this.isIncome,
+    this.sticker = '',
+    this.border = 0,
+    this.custom = false,
+  });
+
+  Map<String, Object?> toMap() => {
+    'name': name,
+    'is_income': isIncome ? 1 : 0,
+    'sticker': sticker,
+    'border': border,
+    'custom': custom ? 1 : 0,
+  };
+
+  factory CatStyle.fromMap(Map<String, Object?> m) => CatStyle(
+    name: (m['name'] as String?) ?? '',
+    isIncome: ((m['is_income'] as num?)?.toInt() ?? 0) == 1,
+    sticker: (m['sticker'] as String?) ?? '',
+    border: (m['border'] as num?)?.toInt() ?? 0,
+    custom: ((m['custom'] as num?)?.toInt() ?? 0) == 1,
   );
 }

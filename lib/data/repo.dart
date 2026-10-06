@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
+import '../utils.dart' show expenseCats, incomeCats;
 import 'package:sqflite/sqflite.dart';
 import '../services/backup_service.dart';
 import '../services/finance_logic.dart';
+import '../stickers.dart' show catStyles;
 import 'models.dart';
 import 'notif.dart';
 
@@ -43,7 +45,16 @@ class Repo {
     await d.execute(
       'CREATE TABLE IF NOT EXISTS notes(id INTEGER PRIMARY KEY AUTOINCREMENT, '
       'title TEXT NOT NULL, content TEXT, color INTEGER NOT NULL, '
-      'pinned INTEGER NOT NULL, updated_ms INTEGER NOT NULL)',
+      'pinned INTEGER NOT NULL, updated_ms INTEGER NOT NULL, '
+      "sticker TEXT NOT NULL DEFAULT '', border INTEGER NOT NULL DEFAULT 0)",
+    );
+  }
+
+  static Future<void> _createCategories(Database d) async {
+    await d.execute(
+      'CREATE TABLE IF NOT EXISTS categories(name TEXT PRIMARY KEY, '
+      'is_income INTEGER NOT NULL, sticker TEXT NOT NULL, '
+      'border INTEGER NOT NULL, custom INTEGER NOT NULL)',
     );
   }
 
@@ -58,7 +69,7 @@ class Repo {
       (factory ?? databaseFactory).openDatabase(
         path,
         options: OpenDatabaseOptions(
-          version: 4,
+          version: 5,
           onCreate: (d, v) async {
             await d.execute(
               'CREATE TABLE events(id INTEGER PRIMARY KEY AUTOINCREMENT, '
@@ -73,6 +84,7 @@ class Repo {
             await _createV2(d);
             await _createIndexes(d);
             await _createNotes(d);
+            await _createCategories(d);
           },
           onUpgrade: (d, oldV, newV) async {
             if (oldV < 2) {
@@ -83,7 +95,13 @@ class Repo {
               await _createIndexes(d);
             }
             if (oldV < 4) {
-              await _createNotes(d);
+              await _createNotes(d); // đã có sẵn cột sticker/border
+            } else if (oldV < 5) {
+              await d.execute("ALTER TABLE notes ADD COLUMN sticker TEXT NOT NULL DEFAULT ''");
+              await d.execute('ALTER TABLE notes ADD COLUMN border INTEGER NOT NULL DEFAULT 0');
+            }
+            if (oldV < 5) {
+              await _createCategories(d);
             }
           },
         ),
@@ -327,6 +345,50 @@ class Repo {
   static Future<void> deleteNote(Note n) async {
     if (n.id == null) return;
     await (await _db).delete('notes', where: 'id=?', whereArgs: [n.id]);
+    dataTick.value++;
+  }
+
+  // ---------- Danh mục (sticker + màu viền) ----------
+  /// Đọc toàn bộ danh mục đã tùy chỉnh và cập nhật bộ nhớ đệm [catStyles].
+  static Future<List<CatStyle>> categories() async {
+    final rows = await (await _db).query('categories', orderBy: 'name COLLATE NOCASE');
+    final list = rows.map(CatStyle.fromMap).toList();
+    catStyles
+      ..clear()
+      ..addEntries(list.map((c) => MapEntry(c.name, c)));
+    return list;
+  }
+
+  /// Lưu danh mục. [oldName] != null và khác tên mới = đổi tên: các giao dịch và
+  /// hóa đơn đang dùng tên cũ được chuyển sang tên mới.
+  /// Trả về false nếu tên trống hoặc trùng với danh mục khác.
+  static Future<bool> saveCategory(CatStyle c, {String? oldName}) async {
+    c.name = c.name.trim();
+    if (c.name.isEmpty) return false;
+    final d = await _db;
+    final renamed = oldName != null && oldName != c.name;
+    if (renamed || oldName == null) {
+      final taken = {...expenseCats, ...incomeCats};
+      final dup = await d.query('categories', where: 'name=?', whereArgs: [c.name]);
+      if (taken.contains(c.name) || dup.isNotEmpty) return false;
+    }
+    await d.transaction((t) async {
+      if (renamed) {
+        await t.update('transactions', {'category': c.name}, where: 'category=?', whereArgs: [oldName]);
+        await t.update('recurring_bills', {'category': c.name}, where: 'category=?', whereArgs: [oldName]);
+        await t.delete('categories', where: 'name=?', whereArgs: [oldName]);
+      }
+      await t.insert('categories', c.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+    await categories();
+    dataTick.value++;
+    return true;
+  }
+
+  /// Xóa danh mục tự tạo. Giao dịch cũ vẫn giữ nguyên tên danh mục.
+  static Future<void> deleteCategory(String name) async {
+    await (await _db).delete('categories', where: 'name=?', whereArgs: [name]);
+    await categories();
     dataTick.value++;
   }
 

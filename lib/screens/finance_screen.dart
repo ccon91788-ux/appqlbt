@@ -6,6 +6,7 @@ import '../services/quick_input_service.dart';
 import '../stickers.dart';
 import '../ui.dart';
 import '../utils.dart';
+import 'category_sheet.dart';
 import 'finance_extras.dart';
 
 class FinanceScreen extends StatelessWidget {
@@ -279,10 +280,24 @@ class _TxnFormState extends State<TxnForm> {
   final _amount = TextEditingController();
   final _cat = TextEditingController();
   final _note = TextEditingController();
+  List<CatStyle> custom = [];
+
+  Future<void> _loadCats() async {
+    final l = await Repo.categories();
+    if (mounted) setState(() => custom = l.where((c) => c.custom).toList());
+  }
+
+  /// Mở bảng sửa danh mục. Danh mục mặc định chỉ đổi được sticker/màu viền.
+  Future<void> _editCat(String name, {required bool isIncome}) async {
+    final e = catStyles[name] ?? CatStyle(name: name, isIncome: isIncome);
+    await openCategorySheet(context, existing: e, income: isIncome);
+    await _loadCats();
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadCats();
     final t = widget.initial;
     income = t?.isIncome ?? false;
     date = t?.date ?? DateTime.now();
@@ -324,7 +339,10 @@ class _TxnFormState extends State<TxnForm> {
 
   @override
   Widget build(BuildContext context) {
-    final cats = income ? incomeCats : expenseCats;
+    final cats = [
+      ...(income ? incomeCats : expenseCats),
+      ...custom.where((c) => c.isIncome == income).map((c) => c.name),
+    ];
     return Scaffold(
       appBar: AppBar(title: Text(widget.fromQuick ? 'Xác nhận giao dịch' : 'Giao dịch')),
       body: ListView(
@@ -360,12 +378,27 @@ class _TxnFormState extends State<TxnForm> {
             spacing: 8,
             children: [
               for (final c in cats)
-                ActionChip(
-                  avatar: catAvatar(c),
-                  label: Text(c),
-                  onPressed: () => setState(() => _cat.text = c),
+                GestureDetector(
+                  onLongPress: () => _editCat(c, isIncome: income),
+                  child: ActionChip(
+                    avatar: catAvatar(c),
+                    label: Text(c),
+                    onPressed: () => setState(() => _cat.text = c),
+                  ),
                 ),
+              ActionChip(
+                avatar: const Icon(Icons.add, size: 18),
+                label: const Text('Mới'),
+                onPressed: () async {
+                  await openCategorySheet(context, income: income);
+                  await _loadCats();
+                },
+              ),
             ],
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text('Nhấn giữ một danh mục để đổi sticker và màu viền.', style: TextStyle(fontSize: 12)),
           ),
           const SizedBox(height: 12),
           TextField(controller: _note, decoration: const InputDecoration(labelText: 'Ghi chú')),
