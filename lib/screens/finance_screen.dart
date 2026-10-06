@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../data/models.dart';
 import '../data/repo.dart';
 import '../services/quick_input_service.dart';
+import '../stickers.dart';
 import '../ui.dart';
 import '../utils.dart';
 import 'finance_extras.dart';
@@ -147,7 +148,7 @@ class _TxnTabState extends State<TxnTab> {
     ),
     child: Row(
       children: [
-        Badge3D(catEmoji(t.category), color: t.category.length),
+        CatBadge(t.category, color: t.category.length),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -360,7 +361,7 @@ class _TxnFormState extends State<TxnForm> {
             children: [
               for (final c in cats)
                 ActionChip(
-                  avatar: Text(catEmoji(c)),
+                  avatar: catAvatar(c),
                   label: Text(c),
                   onPressed: () => setState(() => _cat.text = c),
                 ),

@@ -10,7 +10,7 @@ import '../utils.dart';
 /// Số build, được GitHub Actions truyền vào lúc build (--dart-define=BUILD_NUMBER=...).
 const int kBuild = int.fromEnvironment('BUILD_NUMBER', defaultValue: 0);
 
-const String kRepo = 'ccon91788-ux/appqlbt';
+const String kRepo = 'ccon91788-ux/applich';
 const String kApkUrl = 'https://github.com/$kRepo/releases/latest/download/LifeSync.apk';
 
 /// Lấy số build từ tên tag dạng "build-12". Trả về null nếu không đọc được.

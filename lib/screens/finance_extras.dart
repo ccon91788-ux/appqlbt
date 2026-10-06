@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../data/models.dart';
 import '../data/repo.dart';
 import '../services/finance_logic.dart';
+import '../stickers.dart';
 import '../ui.dart';
 import '../utils.dart';
 
@@ -193,7 +194,7 @@ class BillsTab extends StatelessWidget {
         children: [
           Row(
             children: [
-              Badge3D(catEmoji(b.category), color: b.id ?? 0),
+              CatBadge(b.category, color: b.id ?? 0),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -377,7 +378,7 @@ class _BillFormState extends State<BillForm> {
             spacing: 8,
             children: [
               for (final c in expenseCats)
-                ActionChip(avatar: Text(catEmoji(c)), label: Text(c), onPressed: () => setState(() => _cat.text = c)),
+                ActionChip(avatar: catAvatar(c), label: Text(c), onPressed: () => setState(() => _cat.text = c)),
             ],
           ),
           const SizedBox(height: 12),

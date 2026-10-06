@@ -13,6 +13,8 @@
 - Ô nhập tiền tự thêm dấu phân cách (1500000 → 1,500,000)
 - Sao lưu/khôi phục JSON (phiên bản 2, vẫn nhập được bản 1), xuất CSV UTF-8, giao diện sáng/tối/hệ thống
 
+- **Sticker vịt**: 28 sticker trong `assets/stickers/`, danh mục mặc định hiển thị bằng sticker (đổi ở `lib/stickers.dart`), danh mục tự nhập dùng emoji
+
 ## Hạn chế đã biết
 - Sự kiện lặp theo năm vào ngày 29/2 chỉ nhắc ở năm nhuận.
 - Ngân sách chỉ đặt cho tháng hiện tại; danh mục là chữ tự do (chưa có bảng danh mục riêng).
