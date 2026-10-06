@@ -1,0 +1,99 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Android scaffolding
+        run: |
+          set -o pipefail
+          flutter create --platform=android --org com.lifesync --project-name lifesync . 2>&1 | tee -a ci.log
+          rm -f test/widget_test.dart
+      - name: Chuẩn bị khóa ký cố định
+        env:
+          KS_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ] && [ -n "$KS_ALIAS" ]; then
+            echo "$KS_B64" | base64 --decode > android/app/upload.jks
+            printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload.jks\n' "$KS_PASS" "$KS_PASS" "$KS_ALIAS" > android/key.properties
+            echo "Đã dùng khóa ký cố định."
+          else
+            echo "::warning::Chưa cấu hình khóa ký (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS). APK sẽ không cài đè được lên bản cũ."
+          fi
+      - name: Vá cấu hình Android
+        run: python3 tool/patch_android.py
+      - name: Cài gói (flutter pub get)
+        run: |
+          set -o pipefail
+          flutter pub get 2>&1 | tee -a ci.log
+      - name: Format (áp dụng định dạng chuẩn rồi kiểm tra)
+        run: |
+          set -o pipefail
+          dart format lib test 2>&1 | tee -a ci.log
+          dart format --set-exit-if-changed lib test 2>&1 | tee -a ci.log
+      - name: Phân tích mã (flutter analyze)
+        run: |
+          set -o pipefail
+          flutter analyze --no-fatal-infos 2>&1 | tee -a ci.log
+      - name: Cài SQLite cho test cơ sở dữ liệu
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+      - name: Chạy test (flutter test)
+        run: |
+          set -o pipefail
+          flutter test 2>&1 | tee -a ci.log
+      - name: Build APK
+        run: |
+          set -o pipefail
+          flutter build apk --release --build-number=${{ github.run_number }} --dart-define=BUILD_NUMBER=${{ github.run_number }} 2>&1 | tee -a ci.log
+      - name: Tóm tắt lỗi build
+        if: failure()
+        run: |
+          {
+            echo '## Chi tiết lỗi build'
+            echo '```'
+            if [ -f ci.log ]; then
+              grep -n -B2 -A12 -E "What went wrong|Because |version solving failed|error •|Some tests failed|FAILURE|Could not|Error:" ci.log | head -120
+              echo '--- 40 dòng cuối của log ---'
+              tail -n 40 ci.log
+            else
+              echo 'Chưa có log (lỗi xảy ra trước khi ghi log).'
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-log
+          path: ci.log
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LifeSync-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+      - name: Đăng bản phát hành (tải trực tiếp trên điện thoại)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk LifeSync.apk
+          gh release create "build-${{ github.run_number }}" LifeSync.apk \
+            --title "LifeSync build ${{ github.run_number }}" \
+            --notes "Bản dựng tự động từ lần chạy số ${{ github.run_number }}." \
+            --latest
