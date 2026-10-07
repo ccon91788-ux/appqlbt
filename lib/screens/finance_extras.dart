@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import '../data/models.dart';
 import '../data/repo.dart';
 import '../services/finance_logic.dart';
-import '../stickers.dart';
 import '../ui.dart';
 import '../utils.dart';
 

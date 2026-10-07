@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import '../data/models.dart';
 import '../data/repo.dart';
 import '../main.dart' show showLunar;
-import '../services/finance_logic.dart';
 import '../services/lunar_service.dart';
 import '../ui.dart';
 import '../utils.dart';
@@ -493,14 +492,14 @@ class _EventFormState extends State<EventForm> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<int>(
-            value: rem,
+            initialValue: rem,
             decoration: const InputDecoration(labelText: 'Nhắc nhở'),
             items: [for (final e in reminderLabels.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
             onChanged: (v) => setState(() => rem = v ?? rem),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<int>(
-            value: rep,
+            initialValue: rep,
             decoration: const InputDecoration(labelText: 'Lặp lại'),
             items: [for (final e in repeatLabels.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
             onChanged: (v) => setState(() => rep = v ?? rep),
