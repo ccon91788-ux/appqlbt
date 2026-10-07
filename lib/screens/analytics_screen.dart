@@ -111,7 +111,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           content: Text(
             'Toàn bộ dữ liệu hiện tại sẽ bị thay thế bằng: ${data.events.length} sự kiện, '
             '${data.txns.length} giao dịch, ${data.budgets.length} ngân sách, '
-            '${data.bills.length} hóa đơn, ${data.goals.length} mục tiêu, ${data.notes.length} ghi chú.',
+            '${data.goals.length} mục tiêu, ${data.notes.length} ghi chú.',
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Hủy')),

@@ -50,24 +50,6 @@ void main() {
     });
   });
 
-  group('Hóa đơn định kỳ', () {
-    test('ngày đến hạn đầu tiên', () {
-      expect(firstDue(10, DateTime(2026, 10, 2)), DateTime(2026, 10, 10));
-      expect(firstDue(10, DateTime(2026, 10, 10)), DateTime(2026, 10, 10));
-      expect(firstDue(10, DateTime(2026, 10, 11)), DateTime(2026, 11, 10));
-    });
-    test('dời sang tháng sau', () {
-      expect(nextDueAfter(DateTime(2026, 10, 10), 10), DateTime(2026, 11, 10));
-      expect(nextDueAfter(DateTime(2026, 12, 10), 10), DateTime(2027, 1, 10));
-    });
-    test('ngày 31 co lại ở tháng ngắn', () {
-      expect(billDue(2026, 2, 31), DateTime(2026, 2, 28));
-      expect(billDue(2028, 2, 31), DateTime(2028, 2, 29));
-      expect(nextDueAfter(DateTime(2026, 1, 31), 31), DateTime(2026, 2, 28));
-      expect(nextDueAfter(DateTime(2026, 2, 28), 31), DateTime(2026, 3, 31));
-    });
-  });
-
   test('ymKey', () {
     expect(ymKey(DateTime(2026, 3, 5)), '2026-03');
   });

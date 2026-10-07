@@ -19,21 +19,6 @@ String ymKey(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}';
   return (fire: fire, mask: m);
 }
 
-/// Ngày đến hạn trong tháng (tự co lại nếu tháng ngắn, vd. ngày 31 → 28/30).
-DateTime billDue(int year, int month, int dueDay) {
-  final last = DateTime(year, month + 1, 0).day;
-  return DateTime(year, month, dueDay > last ? last : dueDay);
-}
-
-DateTime firstDue(int dueDay, DateTime today) {
-  final t = DateTime(today.year, today.month, today.day);
-  final d = billDue(t.year, t.month, dueDay);
-  return d.isBefore(t) ? billDue(t.year, t.month + 1, dueDay) : d;
-}
-
-DateTime nextDueAfter(DateTime due, int dueDay) =>
-    billDue(due.year, due.month + 1, dueDay);
-
 double goalProgress(int saved, int target) {
   if (target <= 0) return 0;
   final v = saved / target;

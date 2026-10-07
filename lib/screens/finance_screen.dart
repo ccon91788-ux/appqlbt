@@ -16,7 +16,7 @@ class FinanceScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return DefaultTabController(
-      length: 4,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Tài chính'),
@@ -33,13 +33,12 @@ class FinanceScreen extends StatelessWidget {
             tabs: const [
               Tab(text: 'Giao dịch'),
               Tab(text: 'Ngân sách'),
-              Tab(text: 'Hóa đơn'),
               Tab(text: 'Tiết kiệm'),
             ],
           ),
         ),
         body: const TabBarView(
-          children: [TxnTab(), BudgetTab(), BillsTab(), GoalsTab()],
+          children: [TxnTab(), BudgetTab(), GoalsTab()],
         ),
       ),
     );

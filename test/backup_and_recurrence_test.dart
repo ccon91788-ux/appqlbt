@@ -8,7 +8,6 @@ void main() {
       events: [Event(id: 1, title: 'A', start: DateTime(2026, 10, 1, 19), end: DateTime(2026, 10, 1, 20), repeat: 4)],
       txns: [Txn(id: 1, isIncome: false, amount: 50000, category: 'Ăn uống', date: DateTime(2026, 10, 1))],
       budgets: [Budget(ym: '2026-10', limit: 5000000, notified: 3)],
-      bills: [Bill(id: 1, name: 'Internet', amount: 300000, category: 'Hóa đơn', dueDay: 10, nextDue: DateTime(2026, 10, 10))],
       goals: [Goal(id: 1, name: 'Laptop', target: 10000000, saved: 3000000, created: DateTime(2026, 10, 1))],
       notes: [Note(id: 1, title: 'Việc cần làm', content: 'Mua sữa', color: 2, pinned: true, updated: DateTime(2026, 10, 1))],
     );
@@ -17,7 +16,6 @@ void main() {
     expect(d.events.single.end, isNotNull);
     expect(d.txns.single.amount, 50000);
     expect(d.budgets.single.notified, 3);
-    expect(d.bills.single.dueDay, 10);
     expect(d.goals.single.saved, 3000000);
     expect(d.notes.single.title, 'Việc cần làm');
     expect(d.notes.single.pinned, true);

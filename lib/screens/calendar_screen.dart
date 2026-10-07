@@ -29,12 +29,6 @@ const repeatLabels = {
 bool _same(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
-/// Hóa đơn hiển thị vào đúng ngày đến hạn mỗi tháng, từ tháng của kỳ kế tiếp.
-bool _billOn(Bill b, DateTime d) =>
-    b.enabled &&
-    !d.isBefore(DateTime(b.nextDue.year, b.nextDue.month, 1)) &&
-    _same(d, billDue(d.year, d.month, b.dueDay));
-
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
   @override
@@ -110,19 +104,18 @@ class _CalendarState extends State<CalendarScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Sự kiện'),
       ),
-      body: DataBuilder<({List<Event> events, List<Bill> bills})>(
-        load: () => Repo.calendarData(),
+      body: DataBuilder<List<Event>>(
+        load: () => Repo.events(),
         builder: (context, data) {
-            final events = data?.events ?? <Event>[];
-            final bills = data?.bills ?? <Bill>[];
+            final events = data ?? <Event>[];
             return ValueListenableBuilder<bool>(
               valueListenable: showLunar,
               builder: (context, lunar, _) => ListView(
                 padding: const EdgeInsets.only(bottom: 96),
                 children: [
                   _hero(lunar),
-                  if (mode == 0) _monthGrid(events, bills, lunar),
-                  ..._body(events, bills, lunar),
+                  if (mode == 0) _monthGrid(events, lunar),
+                  ..._body(events, lunar),
                 ],
               ),
             );
@@ -189,13 +182,13 @@ class _CalendarState extends State<CalendarScreen> {
     child: Icon(Icons.circle, size: 6, color: c),
   );
 
-  Widget _monthGrid(List<Event> evs, List<Bill> bills, bool lunar) {
+  Widget _monthGrid(List<Event> evs, bool lunar) {
     final offset = DateTime(sel.year, sel.month, 1).weekday - 1;
     final days = DateTime(sel.year, sel.month + 1, 0).day;
     final cells = <Widget>[
       for (var i = 0; i < offset; i++) const SizedBox.shrink(),
       for (var d = 1; d <= days; d++)
-        _cell(DateTime(sel.year, sel.month, d), evs, bills, lunar),
+        _cell(DateTime(sel.year, sel.month, d), evs, lunar),
     ];
     return SoftCard(
       padding: const EdgeInsets.all(8),
@@ -227,10 +220,6 @@ class _CalendarState extends State<CalendarScreen> {
                   _dot(pastelStrong(0)),
                   const Text(' Sự kiện', style: TextStyle(fontSize: 12)),
                 ]),
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  _dot(pastelStrong(3)),
-                  const Text(' Hóa đơn', style: TextStyle(fontSize: 12)),
-                ]),
               ],
             ),
           ),
@@ -239,12 +228,11 @@ class _CalendarState extends State<CalendarScreen> {
     );
   }
 
-  Widget _cell(DateTime date, List<Event> evs, List<Bill> bills, bool lunar) {
+  Widget _cell(DateTime date, List<Event> evs, bool lunar) {
     final cs = Theme.of(context).colorScheme;
     final isSel = _same(date, sel);
     final isToday = _same(date, DateTime.now());
     final hasEv = evs.any((e) => e.occursOn(date));
-    final hasBill = bills.any((b) => _billOn(b, date));
     final fg = isSel ? cs.onPrimary : cs.onSurface;
     return Semantics(
       button: true,
@@ -285,7 +273,6 @@ class _CalendarState extends State<CalendarScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (hasEv) _dot(isSel ? Colors.white : pastelStrong(0)),
-                        if (hasBill) _dot(isSel ? Colors.white : pastelStrong(3)),
                       ],
                     ),
                   ),
@@ -298,12 +285,12 @@ class _CalendarState extends State<CalendarScreen> {
     );
   }
 
-  List<Widget> _body(List<Event> evs, List<Bill> bills, bool lunar) {
+  List<Widget> _body(List<Event> evs, bool lunar) {
     if (mode != 1) {
       return [
         if (mode == 0)
           SectionTitle(DateFormat('EEEE, dd/MM/yyyy', 'vi').format(sel)),
-        ..._dayWidgets(sel, evs, bills),
+        ..._dayWidgets(sel, evs),
       ];
     }
     final start = DateTime(sel.year, sel.month, sel.day - (sel.weekday - 1));
@@ -331,7 +318,7 @@ class _CalendarState extends State<CalendarScreen> {
           ),
         ),
       );
-      final items = _dayWidgets(d, evs, bills, showEmpty: false);
+      final items = _dayWidgets(d, evs, showEmpty: false);
       out.addAll(
         items.isEmpty
             ? [const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('Trống'))]
@@ -341,15 +328,14 @@ class _CalendarState extends State<CalendarScreen> {
     return out;
   }
 
-  List<Widget> _dayWidgets(DateTime d, List<Event> evs, List<Bill> bills, {bool showEmpty = true}) {
+  List<Widget> _dayWidgets(DateTime d, List<Event> evs, {bool showEmpty = true}) {
     final list = evs.where((e) => e.occursOn(d)).toList()
       ..sort((a, b) => (a.start.hour * 60 + a.start.minute)
           .compareTo(b.start.hour * 60 + b.start.minute));
-    final bs = bills.where((b) => _billOn(b, d)).toList();
-    if (list.isEmpty && bs.isEmpty) {
+    if (list.isEmpty) {
       return showEmpty ? [const EmptyState('🌤️', 'Không có sự kiện trong ngày này')] : [];
     }
-    return [for (final e in list) _eventTile(e), for (final b in bs) _billTile(b, d)];
+    return [for (final e in list) _eventTile(e)];
   }
 
   Widget _eventTile(Event e) {
@@ -379,39 +365,6 @@ class _CalendarState extends State<CalendarScreen> {
             icon: const Icon(Icons.delete_outline),
             onPressed: () => Repo.deleteEvent(e),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _billTile(Bill b, DateTime d) {
-    final due = _same(d, b.nextDue);
-    return SoftCard(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          const Badge3D('🧾', color: 3),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(b.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                Text('${fmtMoney(b.amount)} • Hóa đơn đến hạn', style: const TextStyle(fontSize: 12)),
-              ],
-            ),
-          ),
-          if (due)
-            FilledButton.tonal(
-              onPressed: () async {
-                final ok = await Repo.payBill(b.id!);
-                if (mounted) {
-                  toast(context, ok ? 'Đã ghi nhận thanh toán.' : 'Kỳ này đã được thanh toán.');
-                }
-              },
-              child: const Text('Đã trả'),
-            ),
         ],
       ),
     );

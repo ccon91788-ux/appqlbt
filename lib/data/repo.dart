@@ -26,15 +26,6 @@ class Repo {
       'limit_amount INTEGER NOT NULL, enabled INTEGER NOT NULL, notified INTEGER NOT NULL)',
     );
     await d.execute(
-      'CREATE TABLE IF NOT EXISTS recurring_bills(id INTEGER PRIMARY KEY AUTOINCREMENT, '
-      'name TEXT NOT NULL, amount INTEGER NOT NULL, category TEXT NOT NULL, '
-      'due_day INTEGER NOT NULL, note TEXT, enabled INTEGER NOT NULL, next_due_ms INTEGER NOT NULL)',
-    );
-    await d.execute(
-      'CREATE TABLE IF NOT EXISTS bill_payments(bill_id INTEGER NOT NULL, '
-      'due_ms INTEGER NOT NULL, PRIMARY KEY(bill_id, due_ms))',
-    );
-    await d.execute(
       'CREATE TABLE IF NOT EXISTS goals(id INTEGER PRIMARY KEY AUTOINCREMENT, '
       'name TEXT NOT NULL, target INTEGER NOT NULL, saved INTEGER NOT NULL, '
       'deadline_ms INTEGER, note TEXT, created_ms INTEGER NOT NULL)',
@@ -230,69 +221,15 @@ class Repo {
     } catch (_) {}
   }
 
-  // ---------- Hóa đơn định kỳ ----------
-  static Future<List<Bill>> bills() async {
-    final rows = await (await _db).query('recurring_bills', orderBy: 'next_due_ms');
-    return rows.map(Bill.fromMap).toList();
-  }
-
-  static Future<void> saveBill(Bill b) async {
-    final d = await _db;
-    if (b.id == null) {
-      b.id = await d.insert('recurring_bills', b.toMap()..remove('id'));
-    } else {
-      await d.update('recurring_bills', b.toMap(), where: 'id=?', whereArgs: [b.id]);
-    }
-    await Notif.scheduleBill(b);
-    dataTick.value++;
-  }
-
-  static Future<void> deleteBill(Bill b) async {
-    if (b.id == null) return;
-    await Notif.cancelBill(b.id!);
-    final d = await _db;
-    await d.delete('recurring_bills', where: 'id=?', whereArgs: [b.id]);
-    await d.delete('bill_payments', where: 'bill_id=?', whereArgs: [b.id]);
-    dataTick.value++;
-  }
-
-  /// Đánh dấu đã thanh toán: tạo giao dịch chi và dời sang kỳ sau.
-  /// Trả về false nếu kỳ này đã được thanh toán (chống trùng).
-  static Future<bool> payBill(int billId) async {
-    final d = await _db;
-    var ok = false;
-    Bill? updated;
-    await d.transaction((t) async {
-      final rows = await t.query('recurring_bills', where: 'id=?', whereArgs: [billId]);
-      if (rows.isEmpty) return;
-      final b = Bill.fromMap(rows.first);
-      final due = b.nextDue.millisecondsSinceEpoch;
-      final dup = await t.query('bill_payments',
-          where: 'bill_id=? AND due_ms=?', whereArgs: [billId, due]);
-      if (dup.isNotEmpty) return;
-      await t.insert('bill_payments', {'bill_id': billId, 'due_ms': due});
-      await t.insert(
-        'transactions',
-        Txn(
-          isIncome: false,
-          amount: b.amount,
-          category: b.category,
-          note: 'Hóa đơn: ${b.name}',
-          date: DateTime.now(),
-        ).toMap()..remove('id'),
-      );
-      b.nextDue = nextDueAfter(b.nextDue, b.dueDay);
-      await t.update('recurring_bills', {'next_due_ms': b.nextDue.millisecondsSinceEpoch},
-          where: 'id=?', whereArgs: [billId]);
-      updated = b;
-      ok = true;
-    });
-    if (ok) {
-      if (updated != null) await Notif.scheduleBill(updated!);
-      await _checkBudget(DateTime.now());
-      dataTick.value++;
-    }
-    return ok;
+  /// Tính năng hóa đơn định kỳ đã bị gỡ: hủy các thông báo hóa đơn còn đặt từ bản cũ.
+  /// Bảng cũ (nếu có) được giữ nguyên, không xóa dữ liệu.
+  static Future<void> cancelLegacyBillAlarms() async {
+    try {
+      final rows = await (await _db).query('recurring_bills', columns: ['id']);
+      for (final r in rows) {
+        await Notif.cancel(1000000 + (r['id'] as num).toInt());
+      }
+    } catch (_) {} // bảng không tồn tại (cài mới) -> bỏ qua
   }
 
   // ---------- Mục tiêu tiết kiệm ----------
@@ -375,7 +312,6 @@ class Repo {
     await d.transaction((t) async {
       if (renamed) {
         await t.update('transactions', {'category': c.name}, where: 'category=?', whereArgs: [oldName]);
-        await t.update('recurring_bills', {'category': c.name}, where: 'category=?', whereArgs: [oldName]);
         await t.delete('categories', where: 'name=?', whereArgs: [oldName]);
       }
       await t.insert('categories', c.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
@@ -393,9 +329,6 @@ class Repo {
   }
 
   // ---------- Tổng hợp ----------
-  static Future<({List<Event> events, List<Bill> bills})> calendarData() async =>
-      (events: await events(), bills: await bills());
-
   static Future<({List<Txn> txns, BudgetStatus budget, int savings})> analytics() async {
     final gs = await goals();
     return (
@@ -412,7 +345,6 @@ class Repo {
       events: await events(),
       txns: await txns(),
       budgets: (await d.query('budgets')).map(Budget.fromMap).toList(),
-      bills: await bills(),
       goals: await goals(),
       notes: await notes(),
     );
@@ -423,11 +355,8 @@ class Repo {
     for (final e in await events()) {
       await Notif.cancel(e.id!);
     }
-    for (final b in await bills()) {
-      await Notif.cancelBill(b.id!);
-    }
     await d.transaction((t) async {
-      for (final tb in ['events', 'transactions', 'budgets', 'recurring_bills', 'bill_payments', 'goals', 'notes']) {
+      for (final tb in ['events', 'transactions', 'budgets', 'goals', 'notes']) {
         await t.delete(tb);
       }
       const r = ConflictAlgorithm.replace;
@@ -440,9 +369,6 @@ class Repo {
       for (final x in data.budgets) {
         await t.insert('budgets', x.toMap(), conflictAlgorithm: r);
       }
-      for (final x in data.bills) {
-        await t.insert('recurring_bills', x.toMap(), conflictAlgorithm: r);
-      }
       for (final x in data.goals) {
         await t.insert('goals', x.toMap(), conflictAlgorithm: r);
       }
@@ -450,7 +376,7 @@ class Repo {
         await t.insert('notes', x.toMap(), conflictAlgorithm: r);
       }
     });
-    await Notif.rescheduleAll(await events(), await bills());
+    await Notif.rescheduleAll(await events());
     dataTick.value++;
   }
 }

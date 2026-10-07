@@ -129,41 +129,6 @@ void main() {
     expect(st.budget!.notified, 0);
   });
 
-  test('Hóa đơn: trả tiền tạo giao dịch, dời kỳ sau, chống trả trùng', () async {
-    final b = Bill(
-      name: 'Internet',
-      amount: 300000,
-      category: 'Hóa đơn',
-      dueDay: 10,
-      nextDue: DateTime(2026, 10, 10),
-    );
-    await Repo.saveBill(b);
-
-    expect(await Repo.payBill(b.id!), true);
-    var cur = (await Repo.bills()).single;
-    expect(cur.nextDue, DateTime(2026, 11, 10));
-    var txns = await Repo.txns();
-    expect(txns.length, 1);
-    expect(txns.single.amount, 300000);
-    expect(txns.single.isIncome, false);
-    expect(txns.single.note, contains('Internet'));
-
-    // Đưa hạn về kỳ đã trả rồi trả lại: phải bị chặn
-    cur.nextDue = DateTime(2026, 10, 10);
-    await Repo.saveBill(cur);
-    expect(await Repo.payBill(b.id!), false);
-    expect((await Repo.txns()).length, 1);
-    expect((await Repo.bills()).single.nextDue, DateTime(2026, 10, 10));
-
-    // Kỳ kế tiếp trả bình thường
-    cur.nextDue = DateTime(2026, 11, 10);
-    await Repo.saveBill(cur);
-    expect(await Repo.payBill(b.id!), true);
-    expect((await Repo.bills()).single.nextDue, DateTime(2026, 12, 10));
-    txns = await Repo.txns();
-    expect(txns.length, 2);
-  });
-
   test('Ghi chú: tạo, ghim, sửa, xóa', () async {
     final n = Note(title: 'Việc cần làm', content: 'Mua sữa', color: 2, updated: DateTime(2026, 10, 1));
     await Repo.saveNote(n);
@@ -191,7 +156,6 @@ void main() {
     await Repo.saveEvent(Event(title: 'A', start: DateTime(2026, 10, 1, 9), repeat: 4));
     await Repo.saveTxn(Txn(isIncome: true, amount: 8000000, category: 'Lương', date: DateTime(2026, 10, 1)));
     await Repo.setBudget(DateTime(2026, 10, 1), 5000000);
-    await Repo.saveBill(Bill(name: 'Nước', amount: 100000, category: 'Hóa đơn', dueDay: 5, nextDue: DateTime(2026, 10, 5)));
     await Repo.saveGoal(Goal(name: 'Du lịch', target: 5000000, saved: 1000000, created: DateTime(2026, 10, 1)));
     await Repo.saveNote(Note(title: 'Ghi chú', content: 'Nội dung', updated: DateTime(2026, 10, 1)));
 
@@ -201,13 +165,11 @@ void main() {
       events: <Event>[],
       txns: <Txn>[],
       budgets: <Budget>[],
-      bills: <Bill>[],
       goals: <Goal>[],
       notes: <Note>[],
     ));
     expect(await Repo.events(), isEmpty);
     expect(await Repo.txns(), isEmpty);
-    expect(await Repo.bills(), isEmpty);
     expect(await Repo.goals(), isEmpty);
     expect(await Repo.notes(), isEmpty);
 
@@ -215,12 +177,11 @@ void main() {
     expect((await Repo.events()).single.repeat, 4);
     expect((await Repo.txns()).single.amount, 8000000);
     expect((await Repo.budgetStatus(DateTime(2026, 10, 1))).budget!.limit, 5000000);
-    expect((await Repo.bills()).single.dueDay, 5);
     expect((await Repo.goals()).single.saved, 1000000);
     expect((await Repo.notes()).single.content, 'Nội dung');
   });
 
-  test('Nâng cấp CSDL từ phiên bản 1 lên 4 giữ nguyên dữ liệu cũ', () async {
+  test('Nâng cấp CSDL từ phiên bản 1 lên 5 giữ nguyên dữ liệu cũ', () async {
     await Repo.closeForTest();
     final dir = Directory.systemTemp.createTempSync('lifesync_db');
     try {
@@ -268,10 +229,8 @@ void main() {
       expect((await Repo.txns()).single.amount, 1000);
 
       // Các bảng mới hoạt động sau khi nâng cấp
-      await Repo.saveBill(Bill(name: 'X', amount: 1, category: 'Hóa đơn', dueDay: 1, nextDue: DateTime(2026, 10, 1)));
       await Repo.saveGoal(Goal(name: 'Y', target: 10, created: DateTime(2026, 10, 1)));
       await Repo.saveNote(Note(title: 'Z', updated: DateTime(2026, 10, 1)));
-      expect((await Repo.bills()).length, 1);
       expect((await Repo.goals()).length, 1);
       expect((await Repo.notes()).length, 1);
 

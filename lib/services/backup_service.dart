@@ -5,7 +5,6 @@ typedef BackupData = ({
   List<Event> events,
   List<Txn> txns,
   List<Budget> budgets,
-  List<Bill> bills,
   List<Goal> goals,
   List<Note> notes,
 });
@@ -17,7 +16,6 @@ class BackupService {
     required List<Event> events,
     required List<Txn> txns,
     List<Budget> budgets = const [],
-    List<Bill> bills = const [],
     List<Goal> goals = const [],
     List<Note> notes = const [],
   }) => jsonEncode({
@@ -27,7 +25,6 @@ class BackupService {
     'events': events.map((e) => e.toMap()).toList(),
     'transactions': txns.map((t) => t.toMap()).toList(),
     'budgets': budgets.map((e) => e.toMap()).toList(),
-    'recurring_bills': bills.map((e) => e.toMap()).toList(),
     'goals': goals.map((e) => e.toMap()).toList(),
     'notes': notes.map((e) => e.toMap()).toList(),
   });
@@ -72,19 +69,6 @@ class BackupService {
         }
         return Budget.fromMap(m);
       });
-      final bills = _list<Bill>(j['recurring_bills'], (m) {
-        final dd = m['due_day'];
-        if (m['name'] is! String ||
-            m['amount'] is! int ||
-            (m['amount'] as int) <= 0 ||
-            dd is! int ||
-            dd < 1 ||
-            dd > 31 ||
-            m['next_due_ms'] is! int) {
-          throw const FormatException('bill');
-        }
-        return Bill.fromMap(m);
-      });
       final goals = _list<Goal>(j['goals'], (m) {
         if (m['name'] is! String ||
             m['target'] is! int ||
@@ -106,7 +90,6 @@ class BackupService {
         events: events,
         txns: txns,
         budgets: budgets,
-        bills: bills,
         goals: goals,
         notes: notes,
       );

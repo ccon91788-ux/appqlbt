@@ -123,52 +123,6 @@ class Budget {
   );
 }
 
-class Bill {
-  int? id;
-  String name;
-  int amount;
-  String category;
-  int dueDay;
-  String note;
-  bool enabled;
-  DateTime nextDue;
-
-  Bill({
-    this.id,
-    required this.name,
-    required this.amount,
-    required this.category,
-    required this.dueDay,
-    this.note = '',
-    this.enabled = true,
-    required this.nextDue,
-  });
-
-  Map<String, Object?> toMap() => {
-    'id': id,
-    'name': name,
-    'amount': amount,
-    'category': category,
-    'due_day': dueDay,
-    'note': note,
-    'enabled': enabled ? 1 : 0,
-    'next_due_ms': nextDue.millisecondsSinceEpoch,
-  };
-
-  factory Bill.fromMap(Map<String, Object?> m) => Bill(
-    id: (m['id'] as num?)?.toInt(),
-    name: (m['name'] as String?) ?? '',
-    amount: (m['amount'] as num).toInt(),
-    category: (m['category'] as String?) ?? 'Hóa đơn',
-    dueDay: (m['due_day'] as num).toInt(),
-    note: (m['note'] as String?) ?? '',
-    enabled: ((m['enabled'] as num?)?.toInt() ?? 1) == 1,
-    nextDue: DateTime.fromMillisecondsSinceEpoch(
-      (m['next_due_ms'] as num).toInt(),
-    ),
-  );
-}
-
 class Goal {
   int? id;
   String name;

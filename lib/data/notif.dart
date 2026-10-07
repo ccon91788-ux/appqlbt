@@ -30,18 +30,6 @@ class Notif {
       enableVibration: true,
     ),
   );
-  static const NotificationDetails _bills = NotificationDetails(
-    android: AndroidNotificationDetails(
-      'lifesync_bills',
-      'LifeSync Bills',
-      channelDescription: 'Nhắc hóa đơn định kỳ',
-      importance: Importance.high,
-      priority: Priority.high,
-      playSound: true,
-      enableVibration: true,
-    ),
-  );
-
   static AndroidFlutterLocalNotificationsPlugin? get _android => _p
       .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin
@@ -139,26 +127,6 @@ class Notif {
     } catch (_) {}
   }
 
-  static Future<void> scheduleBill(Bill b) async {
-    if (b.id == null) return;
-    try {
-      final id = 1000000 + b.id!;
-      await _p.cancel(id);
-      if (!b.enabled) return;
-      final f = DateTime(b.nextDue.year, b.nextDue.month, b.nextDue.day, 8, 0);
-      if (!f.isAfter(DateTime.now())) return;
-      await _zoned(
-        id,
-        'Hóa đơn đến hạn: ${b.name}',
-        '${fmtMoney(b.amount)} - hạn thanh toán hôm nay',
-        f,
-        _bills,
-      );
-    } catch (_) {}
-  }
-
-  static Future<void> cancelBill(int billId) => cancel(1000000 + billId);
-
   static Future<void> showBudget(int threshold, int spent, int limit) async {
     try {
       await _p.show(
@@ -171,12 +139,9 @@ class Notif {
     } catch (_) {}
   }
 
-  static Future<void> rescheduleAll(List<Event> events, List<Bill> bills) async {
+  static Future<void> rescheduleAll(List<Event> events) async {
     for (final e in events) {
       if (e.id != null) await schedule(e);
-    }
-    for (final b in bills) {
-      await scheduleBill(b);
     }
   }
 }

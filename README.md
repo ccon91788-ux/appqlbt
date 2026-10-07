@@ -6,7 +6,6 @@
 - **Lịch**: xem tháng / tuần / ngày, Hôm nay, nhảy tới ngày, lịch âm (bật/tắt), sự kiện có giờ bắt đầu - kết thúc, nhắc trước (đúng giờ … 1 ngày), lặp ngày/tuần/tháng/năm (lặp thật), thông báo âm thanh + rung
 - **Tài chính**: thu/chi, danh mục tự nhập, tiền lưu số nguyên VND (`50,000 ₫`), tìm kiếm, Nhập nhanh tiếng Việt (luôn có màn hình xác nhận)
 - **Ngân sách tháng**: thanh tiến độ, còn lại, cảnh báo 80/90/100% (mỗi mức một lần mỗi tháng), bật/tắt, đặt lại
-- **Hóa đơn định kỳ**: hiện trên lịch, nhắc 8:00 ngày đến hạn, "Đã thanh toán" tự tạo giao dịch chi + dời sang tháng sau, chống trả trùng một kỳ
 - **Mục tiêu tiết kiệm**: thanh tiến độ %, thêm/rút tiền, sửa/xóa, hạn chót và số tiền cần để dành mỗi tháng
 - **Thống kê**: tổng thu/chi/số dư/tiết kiệm, biểu đồ tròn theo danh mục, cột thu-chi, xu hướng 6 tháng, lọc tháng này/trước/3/6 tháng/năm nay/tùy chọn
 - **Ghi chú**: tạo/sửa/xóa, ghim, chọn màu pastel, tìm kiếm
@@ -47,4 +46,4 @@ Múi giờ thông báo cố định Asia/Ho_Chi_Minh. APK release ký bằng kh�
 Không làm mất khóa ký: mất khóa thì không thể cập nhật đè được nữa.
 
 ## Kiểm thử
-`flutter test` gồm: logic thuần (nhập nhanh, ngân sách, hóa đơn, tiết kiệm, lịch âm, định dạng tiền, sao lưu) và test **trên SQLite thật** (`test/db_test.dart`, dùng `sqflite_common_ffi`, cần `libsqlite3-dev` trên Linux — workflow đã cài sẵn), gồm cả kiểm tra nâng cấp CSDL từ phiên bản 1 lên 4.
+`flutter test` gồm: logic thuần (nhập nhanh, ngân sách, tiết kiệm, lịch âm, định dạng tiền, sao lưu) và test **trên SQLite thật** (`test/db_test.dart`, dùng `sqflite_common_ffi`, cần `libsqlite3-dev` trên Linux — workflow đã cài sẵn), gồm cả kiểm tra nâng cấp CSDL từ phiên bản 1 lên 5.
