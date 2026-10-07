@@ -20,21 +20,47 @@ class FinanceScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Tài chính'),
-          bottom: TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            dividerColor: Colors.transparent,
-            indicatorSize: TabBarIndicatorSize.tab,
-            labelStyle: const TextStyle(fontWeight: FontWeight.w800),
-            indicator: BoxDecoration(
-              color: cs.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(60),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Container(
+                height: 48,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withAlpha(140),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                // 3 ô cùng độ rộng, căn đều hai bên (không cuộn, không lệch trái)
+                child: TabBar(
+                  isScrollable: false,
+                  dividerColor: Colors.transparent,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorPadding: EdgeInsets.zero,
+                  splashBorderRadius: BorderRadius.circular(18),
+                  labelPadding: EdgeInsets.zero,
+                  labelColor: cs.onPrimaryContainer,
+                  unselectedLabelColor: cs.onSurfaceVariant,
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  indicator: BoxDecoration(
+                    color: cs.primaryContainer,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  tabs: const [
+                    Tab(text: 'Giao dịch'),
+                    Tab(text: 'Ngân sách'),
+                    Tab(text: 'Tiết kiệm'),
+                  ],
+                ),
+              ),
             ),
-            tabs: const [
-              Tab(text: 'Giao dịch'),
-              Tab(text: 'Ngân sách'),
-              Tab(text: 'Tiết kiệm'),
-            ],
           ),
         ),
         body: const TabBarView(
