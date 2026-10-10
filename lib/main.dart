@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'data/notif.dart';
 import 'data/repo.dart';
 import 'screens/analytics_screen.dart';
+import 'screens/ai_chat_screen.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/finance_screen.dart';
 import 'screens/notes_screen.dart';
@@ -78,7 +79,7 @@ class _ShellState extends State<Shell> {
     });
   }
 
-  static const _pages = [CalendarScreen(), FinanceScreen(), NotesScreen(), AnalyticsScreen()];
+  static const _pages = [CalendarScreen(), FinanceScreen(), NotesScreen(), AnalyticsScreen(), AiChatScreen()];
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +93,7 @@ class _ShellState extends State<Shell> {
           NavigationDestination(icon: Text('👛', style: TextStyle(fontSize: 22)), label: 'Tài chính'),
           NavigationDestination(icon: Text('📝', style: TextStyle(fontSize: 22)), label: 'Ghi chú'),
           NavigationDestination(icon: Text('📊', style: TextStyle(fontSize: 22)), label: 'Thống kê'),
+          NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), label: 'Gemini AI'),
         ],
       ),
     );
