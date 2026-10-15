@@ -9,6 +9,7 @@
 - **Mục tiêu tiết kiệm**: thanh tiến độ %, thêm/rút tiền, sửa/xóa, hạn chót và số tiền cần để dành mỗi tháng
 - **Thống kê**: tổng thu/chi/số dư/tiết kiệm, biểu đồ tròn theo danh mục, cột thu-chi, xu hướng 6 tháng, lọc tháng này/trước/3/6 tháng/năm nay/tùy chọn
 - **Ghi chú**: tạo/sửa/xóa, ghim, chọn màu pastel, tìm kiếm
+- **Nhiệm vụ** (tab trong Ghi chú): thêm/sửa/xóa, tick hoàn tất, nhóm "Hoàn tất N" thu gọn được, **Đặt nhắc nhở** (ngày + giờ, thông báo 1 lần, hiển thị "Hôm nay 20:18" / "Ngày mai ..."), tìm kiếm, lưu SQLite + kèm sao lưu/khôi phục
 - **Gemini AI**: màn hình chat riêng; nhập nhiều API key từ TXT/XLSX; lưu key bằng Android secure storage; tự chuyển key khi gặp quota/lỗi xác thực; AI có thể đề xuất lịch và nhắc nhở, chỉ ghi vào lịch sau khi người dùng xác nhận
 - Ô nhập tiền tự thêm dấu phân cách (1500000 → 1,500,000)
 - Sao lưu/khôi phục JSON (phiên bản 2, vẫn nhập được bản 1), xuất CSV UTF-8, giao diện sáng/tối/hệ thống
@@ -53,4 +54,4 @@ Múi giờ thông báo cố định Asia/Ho_Chi_Minh. APK release ký bằng kh�
 Không làm mất khóa ký: mất khóa thì không thể cập nhật đè được nữa.
 
 ## Kiểm thử
-`flutter test` gồm: logic thuần (nhập nhanh, ngân sách, tiết kiệm, lịch âm, định dạng tiền, sao lưu) và test **trên SQLite thật** (`test/db_test.dart`, dùng `sqflite_common_ffi`, cần `libsqlite3-dev` trên Linux — workflow đã cài sẵn), gồm cả kiểm tra nâng cấp CSDL từ phiên bản 1 lên 5.
+`flutter test` gồm: logic thuần (nhập nhanh, ngân sách, tiết kiệm, lịch âm, định dạng tiền, sao lưu) và test **trên SQLite thật** (`test/db_test.dart`, dùng `sqflite_common_ffi`, cần `libsqlite3-dev` trên Linux — workflow đã cài sẵn), gồm cả kiểm tra nâng cấp CSDL từ phiên bản 1 lên 6 và CRUD nhiệm vụ.

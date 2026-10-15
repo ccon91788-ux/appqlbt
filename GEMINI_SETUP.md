@@ -33,7 +33,7 @@ Code của bạn **đã có sẵn** tích hợp Gemini. File đã sửa ở bả
 | `400` | Request lỗi — thường do lịch sử chat rỗng hoặc JSON sai. Thử nhắn lại câu mới. |
 | `401 / 403` | Key sai, bị vô hiệu hoá, hoặc project chưa bật Generative Language API. Tạo key mới, kiểm tra quota trong AI Studio. App sẽ tự thử key tiếp theo. |
 | `429` | Hết quota / quá nhiều request. Đợi 1 phút, hoặc thêm key khác. |
-| `404` | Model chưa khả dụng cho key/project đó. Bản sửa này tự fallback `gemini-2.5-flash` -> `gemini-2.0-flash`. |
+| `404` / `... is no longer available. Please update your code to use models/gemini-3.8-flash` | **Key của bạn vẫn đúng — model cũ đã bị Google ngừng hỗ trợ.** `gemini-2.0-flash` rồi `gemini-2.5-flash` đều đã bị ngừng cho key mới. Bản sửa 15/10/2026 dùng alias lăn `gemini-flash-latest` (tự trỏ sang Flash mới nhất) + fallback `gemini-3.8-flash` -> `gemini-3.6-flash` -> `gemini-flash-lite-latest`, và tự đọc model Google gợi ý trong thông báo 404 để thử ngay. Chỉ cần cập nhật app, không cần đổi key. |
 | `SAFETY / trống` | Gemini chặn nội dung. Diễn đạt lại yêu cầu. |
 
 ## Đã sửa trong bản này
@@ -42,6 +42,16 @@ Code của bạn **đã có sẵn** tích hợp Gemini. File đã sửa ở bả
 - `GeminiService._callModel()` + `HttpGeminiException` — tách 1 lần gọi API ra riêng, xử lý `SAFETY/BLOCKED`, fallback model 404.
 - `AiChatScreen._pasteKey()` + nút **Xóa đoạn chat** — UX cho người dùng mới.
 - Không đổi contract JSON, không đổi cách lưu key, không thêm dependency mới.
+
+## Sửa lỗi 404 ngày 15/10/2026 — model bị ngừng hỗ trợ
+
+- Nguyên nhân: code cũ ghim `gemini-2.5-flash` -> `gemini-2.0-flash`. Google đã ngừng cả 2 cho key mới, nên mọi request đều 404 dù key đúng. Lỗi này **không phải** do hết quota hay sai key.
+- Sửa trong `lib/services/gemini_service.dart`:
+  - `_models = [gemini-flash-latest, gemini-3.8-flash, gemini-3.6-flash, gemini-flash-lite-latest]` — alias `gemini-flash-latest` không bị "thối" khi Google đổi model.
+  - `_suggestedModel()` — đọc model Google gợi ý trong thông báo 404 (ví dụ `models/gemini-3.8-flash`) và thử ngay, chống lỗi tương tự trong tương lai.
+  - Thông báo lỗi 404 giờ ngắn gọn, bằng tiếng Việt, thay vì in nguyên đoạn dài của Google.
+  - `testKey()` thử hết danh sách model, không chỉ model đầu.
+- Về gợi ý "use the Interactions API" trong thông báo lỗi: đó chỉ là khuyến nghị của Google, **không bắt buộc**. `generateContent` (v1beta) vẫn chạy với model mới, nên bản này không chuyển API — tránh thay đổi lớn không cần thiết.
 
 ## Build / test
 

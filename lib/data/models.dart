@@ -213,6 +213,61 @@ class Note {
   );
 }
 
+/// Một nhiệm vụ trong tab "Nhiệm vụ" của màn hình Ghi chú.
+/// Khác với [Event] (sự kiện lịch có giờ bắt đầu - kết thúc + lặp):
+/// nhiệm vụ chỉ có tiêu đề + trạng thái hoàn tất + nhắc nhở 1 lần (tùy chọn).
+class TaskItem {
+  int? id;
+  String title;
+  bool done;
+  DateTime? reminderAt; // null = không nhắc nhở
+  DateTime created;
+  DateTime? completedAt; // null khi chưa hoàn tất
+
+  TaskItem({
+    this.id,
+    required this.title,
+    this.done = false,
+    this.reminderAt,
+    required this.created,
+    this.completedAt,
+  });
+
+  /// Đánh dấu hoàn tất / mở lại, tự cập nhật [completedAt].
+  TaskItem toggled(bool value) => TaskItem(
+    id: id,
+    title: title,
+    done: value,
+    reminderAt: reminderAt,
+    created: created,
+    completedAt: value ? DateTime.now() : null,
+  );
+
+  Map<String, Object?> toMap() => {
+    'id': id,
+    'title': title,
+    'done': done ? 1 : 0,
+    'reminder_ms': reminderAt?.millisecondsSinceEpoch,
+    'created_ms': created.millisecondsSinceEpoch,
+    'completed_ms': completedAt?.millisecondsSinceEpoch,
+  };
+
+  factory TaskItem.fromMap(Map<String, Object?> m) => TaskItem(
+    id: (m['id'] as num?)?.toInt(),
+    title: (m['title'] as String?) ?? '',
+    done: ((m['done'] as num?)?.toInt() ?? 0) == 1,
+    reminderAt: m['reminder_ms'] == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch((m['reminder_ms'] as num).toInt()),
+    created: DateTime.fromMillisecondsSinceEpoch(
+      ((m['created_ms'] as num?) ?? DateTime.now().millisecondsSinceEpoch).toInt(),
+    ),
+    completedAt: m['completed_ms'] == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch((m['completed_ms'] as num).toInt()),
+  );
+}
+
 /// Kiểu hiển thị của một danh mục: sticker + màu viền.
 /// [custom] = danh mục do người dùng tự tạo (có thể đổi tên / xóa).
 class CatStyle {

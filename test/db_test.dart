@@ -152,12 +152,42 @@ void main() {
     expect(await Repo.notes(), isEmpty);
   });
 
+  test('Nhiệm vụ: tạo, nhắc nhở, hoàn tất, sửa, xóa', () async {
+    final t = TaskItem(title: 'Ok', created: DateTime(2026, 10, 1), reminderAt: DateTime(2026, 10, 1, 20, 18));
+    await Repo.saveTask(t);
+    expect(t.id, isNotNull);
+
+    var list = await Repo.tasks();
+    expect(list.single.title, 'Ok');
+    expect(list.single.done, false);
+    expect(list.single.reminderAt, DateTime(2026, 10, 1, 20, 18));
+
+    // Hoàn tất -> completedAt được đặt, mở lại -> xóa completedAt
+    await Repo.saveTask(list.single.toggled(true));
+    list = await Repo.tasks();
+    expect(list.single.done, true);
+    expect(list.single.completedAt, isNotNull);
+    await Repo.saveTask(list.single.toggled(false));
+    expect((await Repo.tasks()).single.completedAt, isNull);
+
+    // Sửa tiêu đề + nhắc nhở
+    final edited = (await Repo.tasks()).single;
+    edited.title = 'Ok (đã sửa)';
+    edited.reminderAt = null;
+    await Repo.saveTask(edited);
+    expect((await Repo.tasks()).single.title, 'Ok (đã sửa)');
+
+    await Repo.deleteTask(edited);
+    expect(await Repo.tasks(), isEmpty);
+  });
+
   test('Sao lưu: xuất, xóa sạch, khôi phục đủ mọi loại dữ liệu', () async {
     await Repo.saveEvent(Event(title: 'A', start: DateTime(2026, 10, 1, 9), repeat: 4));
     await Repo.saveTxn(Txn(isIncome: true, amount: 8000000, category: 'Lương', date: DateTime(2026, 10, 1)));
     await Repo.setBudget(DateTime(2026, 10, 1), 5000000);
     await Repo.saveGoal(Goal(name: 'Du lịch', target: 5000000, saved: 1000000, created: DateTime(2026, 10, 1)));
     await Repo.saveNote(Note(title: 'Ghi chú', content: 'Nội dung', updated: DateTime(2026, 10, 1)));
+    await Repo.saveTask(TaskItem(title: 'Nhiệm vụ', created: DateTime(2026, 10, 1), reminderAt: DateTime(2026, 10, 1, 20, 18)));
 
     final json = await Repo.exportJson();
 
@@ -167,11 +197,13 @@ void main() {
       budgets: <Budget>[],
       goals: <Goal>[],
       notes: <Note>[],
+      tasks: <TaskItem>[],
     ));
     expect(await Repo.events(), isEmpty);
     expect(await Repo.txns(), isEmpty);
     expect(await Repo.goals(), isEmpty);
     expect(await Repo.notes(), isEmpty);
+    expect(await Repo.tasks(), isEmpty);
 
     await Repo.restore(BackupService.parse(json));
     expect((await Repo.events()).single.repeat, 4);
@@ -179,9 +211,11 @@ void main() {
     expect((await Repo.budgetStatus(DateTime(2026, 10, 1))).budget!.limit, 5000000);
     expect((await Repo.goals()).single.saved, 1000000);
     expect((await Repo.notes()).single.content, 'Nội dung');
+    expect((await Repo.tasks()).single.title, 'Nhiệm vụ');
+    expect((await Repo.tasks()).single.reminderAt, DateTime(2026, 10, 1, 20, 18));
   });
 
-  test('Nâng cấp CSDL từ phiên bản 1 lên 5 giữ nguyên dữ liệu cũ', () async {
+  test('Nâng cấp CSDL từ phiên bản 1 lên 6 giữ nguyên dữ liệu cũ', () async {
     await Repo.closeForTest();
     final dir = Directory.systemTemp.createTempSync('lifesync_db');
     try {
@@ -231,8 +265,10 @@ void main() {
       // Các bảng mới hoạt động sau khi nâng cấp
       await Repo.saveGoal(Goal(name: 'Y', target: 10, created: DateTime(2026, 10, 1)));
       await Repo.saveNote(Note(title: 'Z', updated: DateTime(2026, 10, 1)));
+      await Repo.saveTask(TaskItem(title: 'T', created: DateTime(2026, 10, 1)));
       expect((await Repo.goals()).length, 1);
       expect((await Repo.notes()).length, 1);
+      expect((await Repo.tasks()).length, 1);
 
       final idx = await up.rawQuery(
         "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_txn_date'",

@@ -127,6 +127,43 @@ class Notif {
     } catch (_) {}
   }
 
+  // ---------- Nhiệm vụ ----------
+  // ID thông báo nhiệm vụ = 900000 + id nhiệm vụ, để không trùng với
+  // ID sự kiện (id sự kiện) hay cảnh báo ngân sách (2000000 + ...).
+  static int taskNotifId(int taskId) => 900000 + taskId;
+
+  /// Đặt / hủy nhắc nhở 1 lần cho nhiệm vụ.
+  /// Không nhắc nếu: chưa có id, đã hoàn tất, không đặt nhắc nhở,
+  /// hoặc giờ nhắc đã qua.
+  static Future<void> scheduleTask(TaskItem t) async {
+    try {
+      if (t.id == null) return;
+      await _p.cancel(taskNotifId(t.id!));
+      if (t.done) return;
+      final at = t.reminderAt;
+      if (at == null || !at.isAfter(DateTime.now())) return;
+      await _zoned(
+        taskNotifId(t.id!),
+        'Nhiệm vụ: ${t.title}',
+        'Đến giờ làm nhiệm vụ này.',
+        at,
+        _events,
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> cancelTask(int taskId) async {
+    try {
+      await _p.cancel(taskNotifId(taskId));
+    } catch (_) {}
+  }
+
+  static Future<void> rescheduleAllTasks(List<TaskItem> tasks) async {
+    for (final t in tasks) {
+      if (t.id != null) await scheduleTask(t);
+    }
+  }
+
   static Future<void> showBudget(int threshold, int spent, int limit) async {
     try {
       await _p.show(

@@ -7,6 +7,7 @@ typedef BackupData = ({
   List<Budget> budgets,
   List<Goal> goals,
   List<Note> notes,
+  List<TaskItem> tasks,
 });
 
 class BackupService {
@@ -18,6 +19,7 @@ class BackupService {
     List<Budget> budgets = const [],
     List<Goal> goals = const [],
     List<Note> notes = const [],
+    List<TaskItem> tasks = const [],
   }) => jsonEncode({
     'app': 'LifeSync',
     'version': version,
@@ -27,6 +29,7 @@ class BackupService {
     'budgets': budgets.map((e) => e.toMap()).toList(),
     'goals': goals.map((e) => e.toMap()).toList(),
     'notes': notes.map((e) => e.toMap()).toList(),
+    'tasks': tasks.map((e) => e.toMap()).toList(),
   });
 
   static List<T> _list<T>(Object? raw, T Function(Map<String, Object?>) conv) {
@@ -86,12 +89,22 @@ class BackupService {
         }
         return Note.fromMap(m);
       });
+      // 'tasks' không có trong backup cũ (v1 / v2 trước khi có Nhiệm vụ)
+      // -> _list trả về [] nhờ raw == null.
+      final tasks = _list<TaskItem>(j['tasks'], (m) {
+        if (m['title'] is! String ||
+            (m['created_ms'] != null && m['created_ms'] is! int)) {
+          throw const FormatException('task');
+        }
+        return TaskItem.fromMap(m);
+      });
       return (
         events: events,
         txns: txns,
         budgets: budgets,
         goals: goals,
         notes: notes,
+        tasks: tasks,
       );
     } on FormatException {
       rethrow;

@@ -41,6 +41,14 @@ class Repo {
     );
   }
 
+  static Future<void> _createTasks(Database d) async {
+    await d.execute(
+      'CREATE TABLE IF NOT EXISTS tasks(id INTEGER PRIMARY KEY AUTOINCREMENT, '
+      'title TEXT NOT NULL, done INTEGER NOT NULL, '
+      'reminder_ms INTEGER, created_ms INTEGER NOT NULL, completed_ms INTEGER)',
+    );
+  }
+
   static Future<void> _createCategories(Database d) async {
     await d.execute(
       'CREATE TABLE IF NOT EXISTS categories(name TEXT PRIMARY KEY, '
@@ -60,7 +68,7 @@ class Repo {
       (factory ?? databaseFactory).openDatabase(
         path,
         options: OpenDatabaseOptions(
-          version: 5,
+          version: 6,
           onCreate: (d, v) async {
             await d.execute(
               'CREATE TABLE events(id INTEGER PRIMARY KEY AUTOINCREMENT, '
@@ -75,6 +83,7 @@ class Repo {
             await _createV2(d);
             await _createIndexes(d);
             await _createNotes(d);
+            await _createTasks(d);
             await _createCategories(d);
           },
           onUpgrade: (d, oldV, newV) async {
@@ -93,6 +102,9 @@ class Repo {
             }
             if (oldV < 5) {
               await _createCategories(d);
+            }
+            if (oldV < 6) {
+              await _createTasks(d);
             }
           },
         ),
@@ -285,6 +297,34 @@ class Repo {
     dataTick.value++;
   }
 
+  // ---------- Nhiệm vụ (tab "Nhiệm vụ" trong Ghi chú) ----------
+  /// Chưa hoàn tất trước, mới nhất trước; đã hoàn tất xếp sau theo ngày hoàn tất.
+  static Future<List<TaskItem>> tasks() async {
+    final rows = await (await _db).query(
+      'tasks',
+      orderBy: 'done ASC, created_ms DESC',
+    );
+    return rows.map(TaskItem.fromMap).toList();
+  }
+
+  static Future<void> saveTask(TaskItem t) async {
+    final d = await _db;
+    if (t.id == null) {
+      t.id = await d.insert('tasks', t.toMap()..remove('id'));
+    } else {
+      await d.update('tasks', t.toMap(), where: 'id=?', whereArgs: [t.id]);
+    }
+    await Notif.scheduleTask(t);
+    dataTick.value++;
+  }
+
+  static Future<void> deleteTask(TaskItem t) async {
+    if (t.id == null) return;
+    await Notif.cancelTask(t.id!);
+    await (await _db).delete('tasks', where: 'id=?', whereArgs: [t.id]);
+    dataTick.value++;
+  }
+
   // ---------- Danh mục (sticker + màu viền) ----------
   /// Đọc toàn bộ danh mục đã tùy chỉnh và cập nhật bộ nhớ đệm [catStyles].
   static Future<List<CatStyle>> categories() async {
@@ -347,6 +387,7 @@ class Repo {
       budgets: (await d.query('budgets')).map(Budget.fromMap).toList(),
       goals: await goals(),
       notes: await notes(),
+      tasks: await tasks(),
     );
   }
 
@@ -355,8 +396,11 @@ class Repo {
     for (final e in await events()) {
       await Notif.cancel(e.id!);
     }
+    for (final t in await tasks()) {
+      if (t.id != null) await Notif.cancelTask(t.id!);
+    }
     await d.transaction((t) async {
-      for (final tb in ['events', 'transactions', 'budgets', 'goals', 'notes']) {
+      for (final tb in ['events', 'transactions', 'budgets', 'goals', 'notes', 'tasks']) {
         await t.delete(tb);
       }
       const r = ConflictAlgorithm.replace;
@@ -375,8 +419,12 @@ class Repo {
       for (final x in data.notes) {
         await t.insert('notes', x.toMap(), conflictAlgorithm: r);
       }
+      for (final x in data.tasks) {
+        await t.insert('tasks', x.toMap(), conflictAlgorithm: r);
+      }
     });
     await Notif.rescheduleAll(await events());
+    await Notif.rescheduleAllTasks(await tasks());
     dataTick.value++;
   }
 }

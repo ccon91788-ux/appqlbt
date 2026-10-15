@@ -31,9 +31,24 @@ class GeminiService {
   static const _keysName = 'gemini_api_keys_v1';
   static const _indexName = 'gemini_api_key_index_v1';
 
-  // Primary model first, fallback second (used when the primary returns 404
-  // for a key / project that does not have access to it yet).
-  static const _models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  // FIX 15/10/2026 — lỗi 404 trong ảnh chụp:
+  // "models/gemini-2.0-flash is no longer available. Please update your code
+  //  to use models/gemini-3.8-flash".
+  // Google thường xuyên ngừng hỗ trợ model cũ "cho key mới" (2.0, rồi 2.5
+  // cũng vậy) mà vẫn giữ tên trong danh sách models, nên ghim tên
+  // version cụ thể (gemini-2.x) sẽ lại 404 vào lần tới.
+  // Cách bền: dùng alias lăn `gemini-flash-latest` làm mặc định — alias này
+  // tự trỏ sang Flash mới nhất, không cần sửa code khi Google đổi model.
+  // Các tên cụ thể phía sau chỉ là fallback nếu alias tạm lỗi, và code còn
+  // tự đọc model Google gợi ý trong thông báo 404 để thử ngay (xem _request).
+  // generateContent (v1beta) vẫn được hỗ trợ — không cần chuyển sang
+  // Interactions API chỉ để sửa lỗi này.
+  static const _models = [
+    'gemini-flash-latest',
+    'gemini-3.8-flash',
+    'gemini-3.6-flash',
+    'gemini-flash-lite-latest',
+  ];
 
   Future<List<String>> keys() async {
     final raw = await _storage.read(key: _keysName);
@@ -188,6 +203,14 @@ class GeminiService {
     return output;
   }
 
+  /// Google gợi ý model thay thế trong thông báo 404, ví dụ:
+  /// "Please update your code to use models/gemini-3.8-flash".
+  /// Trích tên đó ra để thử ngay, thay vì đợi bản cập nhật app.
+  static String? _suggestedModel(String message) {
+    final m = RegExp(r'models/(gemini-[0-9A-Za-z_.\-]+)').firstMatch(message);
+    return m?.group(1);
+  }
+
   Future<String> _request(List<Map<String, String>> history) async {
     final apiKeys = await keys();
     if (apiKeys.isEmpty) {
@@ -199,10 +222,16 @@ class GeminiService {
         int.tryParse(await _storage.read(key: _indexName) ?? '0') ?? 0;
     final start = storageIndex.clamp(0, apiKeys.length - 1);
     String lastError = 'Không thể kết nối Gemini.';
+    var saw404 = false;
 
     for (var offset = 0; offset < apiKeys.length; offset++) {
       final index = (start + offset) % apiKeys.length;
-      for (final model in _models) {
+      // Hàng đợi model cho key này: _models + model Google gợi ý (nếu có).
+      final queue = <String>[..._models];
+      final tried = <String>{};
+      while (queue.isNotEmpty) {
+        final model = queue.removeAt(0);
+        if (!tried.add(model)) continue;
         try {
           final output = await _callModel(history, apiKeys[index], model);
           // Remember the working key so the next call starts from it.
@@ -210,8 +239,18 @@ class GeminiService {
           return output;
         } on HttpGeminiException catch (e) {
           lastError = 'Gemini HTTP ${e.statusCode}: ${e.message}';
-          // 404 on the primary model -> try the fallback model before rotating keys.
-          if (e.statusCode == 404) continue;
+          // 404 = model đã bị ngừng hỗ trợ -> thử model tiếp theo,
+          // ưu tiên model Google vừa gợi ý trong thông báo lỗi.
+          if (e.statusCode == 404) {
+            saw404 = true;
+            final suggested = _suggestedModel(e.message);
+            if (suggested != null &&
+                !tried.contains(suggested) &&
+                !queue.contains(suggested)) {
+              queue.insert(0, suggested);
+            }
+            continue;
+          }
           // Rotate for quota / rate-limit / invalid / restricted keys.
           if (e.statusCode == 429 || e.statusCode == 403 || e.statusCode == 401) {
             break; // break model loop -> try next key
@@ -225,6 +264,14 @@ class GeminiService {
           break; // network / timeout / parse error — try next key
         }
       }
+    }
+    if (saw404) {
+      throw Exception(
+        'Model Gemini cũ đã bị Google ngừng hỗ trợ (404). '
+        'App đã thử ${_models.join(', ')} và model Google gợi ý nhưng đều không chạy. '
+        'Hãy cập nhật app lên bản mới nhất, hoặc tạo API key mới tại AI Studio rồi nhập lại. '
+        'Lỗi gốc: $lastError',
+      );
     }
     throw Exception(
       '$lastError\nĐã thử các API key đã nhập. Kiểm tra quota, quyền truy cập và model Gemini.',
@@ -240,20 +287,24 @@ class GeminiService {
     }
   }
 
-  /// Quick check: does this single key work? Used by the settings UI.
+  /// Quick check: does this single key work with any model in [_models]?
+  /// Thử hết danh sách (404 ở model đầu không có nghĩa là key hỏng).
   Future<bool> testKey(String apiKey) async {
-    try {
-      await _callModel(
-        [
-          {'role': 'user', 'text': 'Hi'}
-        ],
-        _cleanKey(apiKey),
-        _models.first,
-      );
-      return true;
-    } catch (_) {
-      return false;
+    for (final model in _models) {
+      try {
+        await _callModel(
+          [
+            {'role': 'user', 'text': 'Hi'}
+          ],
+          _cleanKey(apiKey),
+          model,
+        );
+        return true;
+      } catch (_) {
+        continue;
+      }
     }
+    return false;
   }
 
   Future<GeminiReply> chat(List<Map<String, String>> history) async {

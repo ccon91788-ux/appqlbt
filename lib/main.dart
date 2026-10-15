@@ -30,6 +30,7 @@ Future<void> main() async {
     await Notif.init();
     await Repo.cancelLegacyBillAlarms();
     await Notif.rescheduleAll(await Repo.events());
+    await Notif.rescheduleAllTasks(await Repo.tasks());
   } catch (_) {}
   runApp(const LifeSyncApp());
 }
