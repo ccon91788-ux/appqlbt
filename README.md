@@ -10,17 +10,12 @@
 - **Thống kê**: tổng thu/chi/số dư/tiết kiệm, biểu đồ tròn theo danh mục, cột thu-chi, xu hướng 6 tháng, lọc tháng này/trước/3/6 tháng/năm nay/tùy chọn
 - **Ghi chú**: tạo/sửa/xóa, ghim, chọn màu pastel, tìm kiếm
 - **Nhiệm vụ** (tab trong Ghi chú): thêm/sửa/xóa, tick hoàn tất, nhóm "Hoàn tất N" thu gọn được, **Đặt nhắc nhở** (ngày + giờ, thông báo 1 lần, hiển thị "Hôm nay 20:18" / "Ngày mai ..."), tìm kiếm, lưu SQLite + kèm sao lưu/khôi phục
-- **Gemini AI**: màn hình chat riêng; nhập nhiều API key từ TXT/XLSX; lưu key bằng Android secure storage; tự chuyển key khi gặp quota/lỗi xác thực; AI có thể đề xuất lịch và nhắc nhở, chỉ ghi vào lịch sau khi người dùng xác nhận
+- **Sơ đồ tư duy**: tạo nhiều sơ đồ, thêm/sửa/xóa chủ đề và nhánh con; dữ liệu được lưu cục bộ trên thiết bị.
 - Ô nhập tiền tự thêm dấu phân cách (1500000 → 1,500,000)
 - Sao lưu/khôi phục JSON (phiên bản 2, vẫn nhập được bản 1), xuất CSV UTF-8, giao diện sáng/tối/hệ thống
 
 - **Sticker vịt**: 28 sticker trong `assets/stickers/`, danh mục mặc định hiển thị bằng sticker (đổi ở `lib/stickers.dart`), danh mục tự nhập dùng emoji
 
-## Gemini AI
-- Cần tự cung cấp Gemini API key từ Google AI Studio và kết nối Internet. API key có thể phát sinh giới hạn/quota riêng; chuyển key không giúp khi mọi key đều hết hạn mức.
-- Tệp TXT hỗ trợ trích xuất key dạng `AIza...`; Excel hỗ trợ `.xlsx` và quét các ô có chứa key.
-- AI tạo bản đề xuất sự kiện; người dùng phải bấm **Xem & thêm** để lưu và lập thông báo. Đề xuất địa điểm hiện chưa có tìm kiếm bản đồ/địa điểm trực tiếp, nên AI không xác nhận địa điểm đang mở hoặc gần vị trí hiện tại.
-- API key được lưu trong vùng lưu trữ bảo mật của Android; không nên chia sẻ tệp chứa key.
 
 ## Hạn chế đã biết
 - Sự kiện lặp theo năm vào ngày 29/2 chỉ nhắc ở năm nhuận.
