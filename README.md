@@ -11,6 +11,8 @@
 - **Ghi chú**: tạo/sửa/xóa, ghim, chọn màu pastel, tìm kiếm
 - **Nhiệm vụ** (tab trong Ghi chú): thêm/sửa/xóa, tick hoàn tất, nhóm "Hoàn tất N" thu gọn được, **Đặt nhắc nhở** (ngày + giờ, thông báo 1 lần, hiển thị "Hôm nay 20:18" / "Ngày mai ..."), tìm kiếm, lưu SQLite + kèm sao lưu/khôi phục
 - **Sơ đồ tư duy**: tạo nhiều sơ đồ, thêm/sửa/xóa chủ đề và nhánh con; dữ liệu được lưu cục bộ trên thiết bị.
+- **Google Drive**: kết nối trong Cài đặt (biểu tượng bánh răng) để sao lưu lên Drive (thư mục ẩn riêng của app) và khôi phục sau khi xóa app cài lại; có chế độ tự động sao lưu khi mở app. Cách tạo OAuth client xem `DRIVE_SETUP.md`.
+- **Flashcards**: học tiếng Anh kiểu Quizlet — tạo bộ thẻ (từ — nghĩa — ví dụ), chế độ Học lật thẻ (Đã nhớ / Chưa nhớ, xáo trộn, chỉ học thẻ chưa nhớ) và Trắc nghiệm 4 lựa chọn có chấm điểm và làm lại câu sai; mở lần đầu có sẵn bộ mẫu 20 từ.
 - Ô nhập tiền tự thêm dấu phân cách (1500000 → 1,500,000)
 - Sao lưu/khôi phục JSON (phiên bản 2, vẫn nhập được bản 1), xuất CSV UTF-8, giao diện sáng/tối/hệ thống
 

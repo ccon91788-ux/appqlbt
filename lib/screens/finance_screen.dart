@@ -10,11 +10,68 @@ import 'category_sheet.dart';
 import 'finance_extras.dart';
 
 class FinanceScreen extends StatelessWidget {
-  const FinanceScreen({super.key});
+  const FinanceScreen({super.key, this.embedded = false});
+
+  /// true khi được nhúng trong MoneyScreen (không tự tạo Scaffold/AppBar,
+  /// thanh chọn Giao dịch / Ngân sách / Tiết kiệm nằm ở đầu phần thân).
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final pill = Container(
+      height: 48,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withAlpha(140),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      // 3 ô cùng độ rộng, căn đều hai bên (không cuộn, không lệch trái)
+      child: TabBar(
+        isScrollable: false,
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicatorPadding: EdgeInsets.zero,
+        splashBorderRadius: BorderRadius.circular(18),
+        labelPadding: EdgeInsets.zero,
+        labelColor: cs.onPrimaryContainer,
+        unselectedLabelColor: cs.onSurfaceVariant,
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        indicator: BoxDecoration(
+          color: cs.primaryContainer,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        tabs: const [
+          Tab(text: 'Giao dịch'),
+          Tab(text: 'Ngân sách'),
+          Tab(text: 'Tiết kiệm'),
+        ],
+      ),
+    );
+    const tabView = TabBarView(
+      children: [TxnTab(), BudgetTab(), GoalsTab()],
+    );
+    if (embedded) {
+      return DefaultTabController(
+        length: 3,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: pill,
+            ),
+            const Expanded(child: tabView),
+          ],
+        ),
+      );
+    }
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -24,48 +81,11 @@ class FinanceScreen extends StatelessWidget {
             preferredSize: const Size.fromHeight(60),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Container(
-                height: 48,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withAlpha(140),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                // 3 ô cùng độ rộng, căn đều hai bên (không cuộn, không lệch trái)
-                child: TabBar(
-                  isScrollable: false,
-                  dividerColor: Colors.transparent,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicatorPadding: EdgeInsets.zero,
-                  splashBorderRadius: BorderRadius.circular(18),
-                  labelPadding: EdgeInsets.zero,
-                  labelColor: cs.onPrimaryContainer,
-                  unselectedLabelColor: cs.onSurfaceVariant,
-                  labelStyle: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                  indicator: BoxDecoration(
-                    color: cs.primaryContainer,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  tabs: const [
-                    Tab(text: 'Giao dịch'),
-                    Tab(text: 'Ngân sách'),
-                    Tab(text: 'Tiết kiệm'),
-                  ],
-                ),
-              ),
+              child: pill,
             ),
           ),
         ),
-        body: const TabBarView(
-          children: [TxnTab(), BudgetTab(), GoalsTab()],
-        ),
+        body: tabView,
       ),
     );
   }

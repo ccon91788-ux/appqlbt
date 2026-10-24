@@ -1,19 +1,9 @@
-import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models.dart';
 import '../data/repo.dart';
-import '../main.dart' show themeMode, showLunar;
-import '../services/backup_service.dart';
-import '../services/csv_service.dart';
-import '../services/update_service.dart';
 import '../ui.dart';
 import '../utils.dart';
 
@@ -24,7 +14,10 @@ const _palette = [
 ];
 
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({super.key});
+  const AnalyticsScreen({super.key, this.embedded = false});
+
+  /// true khi được nhúng trong MoneyScreen (không tự tạo Scaffold/AppBar).
+  final bool embedded;
   @override
   State<AnalyticsScreen> createState() => _AnalyticsState();
 }
@@ -32,15 +25,6 @@ class AnalyticsScreen extends StatefulWidget {
 class _AnalyticsState extends State<AnalyticsScreen> {
   int r = 0;
   DateTimeRange? custom;
-  bool autoUpd = true;
-
-  @override
-  void initState() {
-    super.initState();
-    UpdateService.autoEnabled().then((v) {
-      if (mounted) setState(() => autoUpd = v);
-    });
-  }
   static const _rl = ['Tháng này', 'Tháng trước', '3 tháng', '6 tháng', 'Năm nay', 'Tùy chọn'];
 
   (DateTime, DateTime) _range() {
@@ -63,67 +47,6 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           DateTime(c.start.year, c.start.month, c.start.day),
           DateTime(c.end.year, c.end.month, c.end.day + 1),
         );
-    }
-  }
-
-  Future<File> _tmp(String name, String content) async {
-    final dir = await getTemporaryDirectory();
-    final f = File('${dir.path}/$name');
-    return f.writeAsString(content, encoding: utf8);
-  }
-
-  Future<void> _export() async {
-    try {
-      final f = await _tmp(
-        'LifeSync_Backup_${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json',
-        await Repo.exportJson(),
-      );
-      await SharePlus.instance.share(ShareParams(files: [XFile(f.path)]));
-    } catch (_) {
-      if (mounted) toast(context, 'Không thể xuất sao lưu.');
-    }
-  }
-
-  Future<void> _csv() async {
-    try {
-      final f = await _tmp(
-        'LifeSync_Transactions_${DateFormat('yyyy-MM').format(DateTime.now())}.csv',
-        CsvService.build(await Repo.txns()),
-      );
-      await SharePlus.instance.share(ShareParams(files: [XFile(f.path)]));
-    } catch (_) {
-      if (mounted) toast(context, 'Không thể xuất CSV.');
-    }
-  }
-
-  Future<void> _import() async {
-    try {
-      final res = await FilePicker.platform.pickFiles(withData: true);
-      if (res == null || res.files.isEmpty) return;
-      final bytes = res.files.first.bytes;
-      if (bytes == null) throw const FormatException('empty');
-      final data = BackupService.parse(utf8.decode(bytes));
-      if (!mounted) return;
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (c) => AlertDialog(
-          title: const Text('Khôi phục dữ liệu?'),
-          content: Text(
-            'Toàn bộ dữ liệu hiện tại sẽ bị thay thế bằng: ${data.events.length} sự kiện, '
-            '${data.txns.length} giao dịch, ${data.budgets.length} ngân sách, '
-            '${data.goals.length} mục tiêu, ${data.notes.length} ghi chú.',
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Hủy')),
-            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Khôi phục')),
-          ],
-        ),
-      );
-      if (ok != true) return;
-      await Repo.restore(data);
-      if (mounted) toast(context, 'Đã khôi phục dữ liệu.');
-    } catch (_) {
-      if (mounted) toast(context, 'Không thể nhập dữ liệu. Tệp sao lưu không hợp lệ.');
     }
   }
 
@@ -158,9 +81,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Thống kê')),
-      body: DataBuilder<({List<Txn> txns, BudgetStatus budget, int savings})>(
+    final content = DataBuilder<({List<Txn> txns, BudgetStatus budget, int savings})>(
         load: () => Repo.analytics(),
         builder: (context, data) {
             final (a, b) = _range();
@@ -397,90 +318,11 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                           ),
                         ),
                 ),
-                const SectionTitle('Cài đặt'),
-                SoftCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Giao diện', style: TextStyle(fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 8),
-                      ValueListenableBuilder<ThemeMode>(
-                        valueListenable: themeMode,
-                        builder: (context, m, _) => SegmentedButton<int>(
-                          segments: const [
-                            ButtonSegment(value: 0, label: Text('Hệ thống')),
-                            ButtonSegment(value: 1, label: Text('Sáng')),
-                            ButtonSegment(value: 2, label: Text('Tối')),
-                          ],
-                          selected: {m.index},
-                          onSelectionChanged: (s) async {
-                            themeMode.value = ThemeMode.values[s.first];
-                            try {
-                              final sp = await SharedPreferences.getInstance();
-                              await sp.setInt('theme', s.first);
-                            } catch (_) {}
-                          },
-                        ),
-                      ),
-                      ValueListenableBuilder<bool>(
-                        valueListenable: showLunar,
-                        builder: (context, on, _) => SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('Hiển thị lịch âm'),
-                          value: on,
-                          onChanged: (v) async {
-                            showLunar.value = v;
-                            try {
-                              final sp = await SharedPreferences.getInstance();
-                              await sp.setBool('lunar', v);
-                            } catch (_) {}
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SoftCard(
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    children: [
-                      SwitchListTile(
-                        secondary: const Badge3D('🔄', size: 40, color: 2),
-                        title: const Text('Tự kiểm tra cập nhật khi mở app'),
-                        subtitle: Text(kBuild == 0 ? 'Bản thử nghiệm' : 'Phiên bản hiện tại: build $kBuild'),
-                        value: autoUpd,
-                        onChanged: (v) async {
-                          setState(() => autoUpd = v);
-                          await UpdateService.setAutoEnabled(v);
-                        },
-                      ),
-                      ListTile(
-                        leading: const Badge3D('⬆️', size: 40, color: 2),
-                        title: const Text('Kiểm tra cập nhật ngay'),
-                        onTap: () => UpdateService.check(context),
-                      ),
-                      ListTile(
-                        leading: const Badge3D('📤', size: 40),
-                        title: const Text('Xuất sao lưu (JSON)'),
-                        onTap: _export,
-                      ),
-                      ListTile(
-                        leading: const Badge3D('📥', size: 40, color: 1),
-                        title: const Text('Nhập / khôi phục sao lưu'),
-                        onTap: _import,
-                      ),
-                      ListTile(
-                        leading: const Badge3D('📑', size: 40, color: 4),
-                        title: const Text('Xuất giao dịch (CSV)'),
-                        onTap: _csv,
-                      ),
-                    ],
-                  ),
-                ),
               ],
             );
           },
-      ),
-    );
+      );
+    if (widget.embedded) return content;
+    return Scaffold(appBar: AppBar(title: const Text('Thống kê')), body: content);
   }
 }

@@ -1,14 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'data/notif.dart';
 import 'data/repo.dart';
-import 'screens/analytics_screen.dart';
+import 'screens/flashcards_screen.dart';
+import 'screens/money_screen.dart';
 import 'screens/mind_map_screen.dart';
 import 'screens/calendar_screen.dart';
-import 'screens/finance_screen.dart';
 import 'screens/notes_screen.dart';
+import 'services/drive_service.dart';
 import 'services/update_service.dart';
 import 'ui.dart';
 
@@ -32,6 +35,9 @@ Future<void> main() async {
     await Notif.rescheduleAll(await Repo.events());
     await Notif.rescheduleAllTasks(await Repo.tasks());
   } catch (_) {}
+  // Sao lưu tự động lên Google Drive nếu người dùng đã bật (chạy nền,
+  // mọi lỗi đều được bỏ qua để không làm chậm hay làm phiền app).
+  unawaited(DriveService.maybeAutoBackup());
   runApp(const LifeSyncApp());
 }
 
@@ -80,7 +86,7 @@ class _ShellState extends State<Shell> {
     });
   }
 
-  static const _pages = [CalendarScreen(), FinanceScreen(), NotesScreen(), AnalyticsScreen(), MindMapScreen()];
+  static const _pages = [CalendarScreen(), MoneyScreen(), NotesScreen(), MindMapScreen(), FlashcardsScreen()];
 
   @override
   Widget build(BuildContext context) {
@@ -93,8 +99,8 @@ class _ShellState extends State<Shell> {
           NavigationDestination(icon: Text('🗓️', style: TextStyle(fontSize: 22)), label: 'Lịch'),
           NavigationDestination(icon: Text('👛', style: TextStyle(fontSize: 22)), label: 'Tài chính'),
           NavigationDestination(icon: Text('📝', style: TextStyle(fontSize: 22)), label: 'Ghi chú'),
-          NavigationDestination(icon: Text('📊', style: TextStyle(fontSize: 22)), label: 'Thống kê'),
           NavigationDestination(icon: Icon(Icons.account_tree_outlined), label: 'Sơ đồ tư duy'),
+          NavigationDestination(icon: Icon(Icons.style_outlined), label: 'Flashcards'),
         ],
       ),
     );
