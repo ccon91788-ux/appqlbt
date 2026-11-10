@@ -1,0 +1,120 @@
+dog	con chó
+cat	con mèo
+bird	con chim
+fish	con cá
+rabbit	con thỏ
+lion	con sư tử
+elephant	con voi
+monkey	con khỉ
+duck	con vịt
+bear	con gấu
+horse	con ngựa
+cow	con bò
+pig	con lợn
+chicken	con gà
+mouse	con chuột
+snake	con rắn
+frog	con ếch
+butterfly	con bướm
+bee	con ong
+tiger	con hổ
+apple	quả táo
+banana	quả chuối
+orange	quả cam
+grape	quả nho
+mango	quả xoài
+milk	sữa
+bread	bánh mì
+rice	cơm
+egg	quả trứng
+cake	bánh ngọt
+water	nước
+juice	nước ép
+candy	kẹo
+cookie	bánh quy
+cheese	phô mai
+red	màu đỏ
+blue	màu xanh dương
+yellow	màu vàng
+green	màu xanh lá
+grey	màu xám
+pink	màu hồng
+purple	màu tím
+black	màu đen
+white	màu trắng
+brown	màu nâu
+mother	mẹ
+father	bố
+sister	chị gái
+brother	anh trai
+baby	em bé
+friend	bạn bè
+teacher	cô giáo
+student	học sinh
+doctor	bác sĩ
+family	gia đình
+school	trường học
+book	quyển sách
+pen	cây bút
+pencil	bút chì
+bag	cái cặp
+chair	cái ghế
+table	cái bàn
+door	cửa ra vào
+window	cửa sổ
+house	ngôi nhà
+sun	mặt trời
+moon	mặt trăng
+star	ngôi sao
+sky	bầu trời
+cloud	đám mây
+rain	cơn mưa
+tree	cây
+flower	bông hoa
+leaf	chiếc lá
+sea	biển
+hand	bàn tay
+eye	mắt
+nose	mũi
+mouth	miệng
+ear	tai
+head	đầu
+hair	tóc
+foot	bàn chân
+leg	chân
+arm	cánh tay
+happy	vui vẻ
+sad	buồn
+big	to
+small	nhỏ
+tall	cao
+short	thấp
+hot	nóng
+cold	lạnh
+fast	nhanh
+slow	chậm
+run	chạy
+jump	nhảy
+swim	bơi
+sing	hát
+dance	nhảy múa
+read	đọc
+write	viết
+draw	vẽ
+play	chơi
+sleep	ngủ
+eat	ăn
+drink	uống
+love	yêu thương
+like	thích
+help	giúp đỡ
+ball	quả bóng
+doll	búp bê
+car	xe hơi
+train	tàu hỏa
+bike	xe đạp
+kite	con diều
+toy	đồ chơi
+gift	món quà
+music	âm nhạc
+song	bài hát
